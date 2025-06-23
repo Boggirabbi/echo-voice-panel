@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SessionLogEntry, EmotionSound } from "@/types/electron";
 import ModeSelector from "./ModeSelector";
@@ -11,6 +10,7 @@ import SessionLog from "./SessionLog";
 import LatencyIndicator from "./LatencyIndicator";
 import CustomEmotionCreator from "./CustomEmotionCreator";
 import StreamDeckIntegration from "./StreamDeckIntegration";
+import { generateSSML } from "@/utils/ssmlGenerator";
 
 type AppMode = 'text' | 'stt' | 'emotion';
 
@@ -22,7 +22,7 @@ const VoiceConsole = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentLatency, setCurrentLatency] = useState<number>(0);
 
-  // Voice selection - now uses Google Cloud voices
+  // Voice selection - Google Cloud voices
   const [selectedVoice, setSelectedVoice] = useState<string>("en-US-Wavenet-C");
 
   // Emotion sounds - expanded with adult content
@@ -56,7 +56,7 @@ const VoiceConsole = () => {
     setSessionLog(prev => [entry, ...prev]);
   };
 
-  const handleSpeak = async (text: string, voiceOverride?: string) => {
+  const handleSpeak = async (text: string, voiceOverride?: string, ssml?: string) => {
     if (!text.trim()) return;
     
     const startTime = Date.now();
@@ -65,17 +65,18 @@ const VoiceConsole = () => {
 
     try {
       const voiceToUse = voiceOverride || selectedVoice;
+      const textToSpeak = ssml || text; // Use SSML if provided
 
       if (window.electronAPI?.synthesize) {
         await window.electronAPI.synthesize({
-          text,
+          text: textToSpeak,
           voiceName: voiceToUse,
           speed: 1.0,
           pitch: 0
         });
       } else {
         // Demo mode
-        console.log(`[DEMO] Speaking: "${text}" with voice: ${voiceToUse}`);
+        console.log(`[DEMO] Speaking: "${textToSpeak}" with voice: ${voiceToUse}`);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
@@ -99,7 +100,9 @@ const VoiceConsole = () => {
 
     try {
       if (emotion.type === 'tts') {
-        await handleSpeak(emotion.content);
+        // Generate SSML for emotion-based content
+        const ssml = generateSSML(emotion.content, emotionId);
+        await handleSpeak(emotion.content, undefined, ssml);
       } else {
         // Audio file playback
         if (window.electronAPI?.playEmotionSound) {
@@ -122,9 +125,10 @@ const VoiceConsole = () => {
     
     setEmotionSounds(prev => [...prev, emotion]);
     
-    // Test the new emotion immediately to ensure it works
+    // Test the new emotion immediately with SSML
     if (emotion.type === 'tts') {
-      await handleSpeak(emotion.content);
+      const ssml = generateSSML(emotion.content, id);
+      await handleSpeak(emotion.content, undefined, ssml);
     }
   };
 

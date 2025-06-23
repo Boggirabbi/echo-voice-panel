@@ -1,8 +1,7 @@
-
 export interface ElectronAPI {
   // Voice synthesis
   getVoices: () => Promise<Voice[]>;
-  synthesize: (params: { text: string; voiceName: string; speed?: number; pitch?: number }) => Promise<void>;
+  synthesize: (params: { text: string; voiceName: string; speed?: number; pitch?: number; ssml?: boolean }) => Promise<void>;
   
   // Speech-to-speech
   startStreaming: (params: { voiceName: string }) => Promise<void>;

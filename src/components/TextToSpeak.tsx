@@ -3,9 +3,10 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
+import { parseSlashCommand } from "@/utils/ssmlGenerator";
 
 interface TextToSpeakProps {
-  onSpeak: (text: string, command?: string) => Promise<void>;
+  onSpeak: (text: string, voiceOverride?: string, ssml?: string) => Promise<void>;
   disabled: boolean;
   isSpeaking: boolean;
 }
@@ -15,22 +16,15 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
   const [recentPhrases, setRecentPhrases] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const parseSlashCommand = (input: string) => {
-    const match = input.match(/^\/(\w+)\s+(.+)$/);
-    if (match) {
-      return { command: match[1], text: match[2] };
-    }
-    return { command: undefined, text: input };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || disabled || isSpeaking) return;
     
-    const { command, text: cleanText } = parseSlashCommand(text);
+    const { command, text: cleanText, ssml } = parseSlashCommand(text);
     
     try {
-      await onSpeak(cleanText, command);
+      // Pass SSML to the backend if generated
+      await onSpeak(cleanText, undefined, ssml);
       
       // Add to recent phrases
       setRecentPhrases(prev => [cleanText, ...prev.slice(0, 2)]);
@@ -66,7 +60,7 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type message or use slash commands (/tease, /calm)..."
+            placeholder="Type message or use slash commands (/tease, /calm, /whisper)..."
             className="flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
             disabled={disabled || isSpeaking}
           />
@@ -83,7 +77,7 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
             )}
           </Button>
         </form>
-        <p className="text-xs text-gray-500">Press Enter to speak instantly | Use /command for emotion modes</p>
+        <p className="text-xs text-gray-500">Press Enter to speak instantly | Use /command for SSML emotion modes</p>
       </div>
 
       {recentPhrases.length > 0 && (
