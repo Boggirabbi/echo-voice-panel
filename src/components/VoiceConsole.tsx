@@ -9,6 +9,8 @@ import SpeechToSpeechToggle from "./SpeechToSpeechToggle";
 import SessionStatus from "./SessionStatus";
 import SessionLog from "./SessionLog";
 import LatencyIndicator from "./LatencyIndicator";
+import CustomEmotionCreator from "./CustomEmotionCreator";
+import StreamDeckIntegration from "./StreamDeckIntegration";
 
 type AppMode = 'text' | 'stt' | 'emotion';
 
@@ -24,18 +26,26 @@ const VoiceConsole = () => {
   const [emotionProfiles] = useState<EmotionProfile[]>([
     { id: 'calm', name: 'Calm Therapist', voiceName: 'en-US-Standard-A', speed: 0.9, pitch: -2, style: 'calm' },
     { id: 'tease', name: 'Teasing Girl', voiceName: 'en-US-Standard-C', speed: 1.1, pitch: 3, style: 'playful' },
-    { id: 'coach', name: 'Encouraging Coach', voiceName: 'en-US-Standard-D', speed: 1.0, pitch: 1, style: 'motivational' }
+    { id: 'coach', name: 'Encouraging Coach', voiceName: 'en-US-Standard-D', speed: 1.0, pitch: 1, style: 'motivational' },
+    { id: 'sultry', name: 'Sultry Seductress', voiceName: 'en-US-Standard-E', speed: 0.8, pitch: 2, style: 'seductive' },
+    { id: 'dominant', name: 'Dominant Mistress', voiceName: 'en-US-Standard-F', speed: 1.0, pitch: -1, style: 'commanding' }
   ]);
   const [selectedProfile, setSelectedProfile] = useState('calm');
 
-  // Emotion sounds
-  const [emotionSounds] = useState<EmotionSound[]>([
+  // Emotion sounds - expanded with adult content
+  const [emotionSounds, setEmotionSounds] = useState<EmotionSound[]>([
     { id: 'laugh', name: 'Laugh', hotkey: 'F1', type: 'tts', content: '*giggles softly*' },
     { id: 'gasp', name: 'Gasp', hotkey: 'F2', type: 'tts', content: '*gasps in surprise*' },
     { id: 'sigh', name: 'Sigh', hotkey: 'F3', type: 'tts', content: '*sighs thoughtfully*' },
-    { id: 'hmm', name: 'Thinking', hotkey: 'F4', type: 'tts', content: 'Hmm, interesting...' },
-    { id: 'wow', name: 'Amazed', hotkey: 'F5', type: 'tts', content: 'Wow, that\'s incredible!' },
-    { id: 'comfort', name: 'Comfort', hotkey: 'F6', type: 'tts', content: 'It\'s okay, take your time.' }
+    { id: 'encourage', name: 'Good Boy', hotkey: 'F4', type: 'tts', content: 'Good boy, keep going for me...' },
+    { id: 'tease', name: 'Is That All?', hotkey: 'F5', type: 'tts', content: 'Is that all you can do? How cute...' },
+    { id: 'moan', name: 'Soft Moan', hotkey: 'F6', type: 'tts', content: '*moans softly* Mmm, yes...' },
+    { id: 'whisper', name: 'Seductive Whisper', hotkey: 'F7', type: 'tts', content: '*whispers seductively* You\'re doing this just for me, aren\'t you?' },
+    { id: 'affirmation', name: 'You\'re Mine', hotkey: 'F8', type: 'tts', content: 'You\'re such a good little toy for me...' },
+    { id: 'humiliation', name: 'Pathetic', hotkey: 'F9', type: 'tts', content: 'How pathetic... but I love watching you try so hard.' },
+    { id: 'praise', name: 'Perfect', hotkey: 'F10', type: 'tts', content: '*breathily* Perfect... just like that, don\'t stop...' },
+    { id: 'command', name: 'Obey Me', hotkey: 'F11', type: 'tts', content: 'Now be a good boy and obey me completely...' },
+    { id: 'reward', name: 'Such a Good Pet', hotkey: 'F12', type: 'tts', content: 'Such a good pet... you deserve a reward, don\'t you?' }
   ]);
 
   // Session logging
@@ -122,6 +132,18 @@ const VoiceConsole = () => {
     }
   };
 
+  const handleCreateCustomEmotion = async (newEmotion: Omit<EmotionSound, 'id'>) => {
+    const id = `custom_${Date.now()}`;
+    const emotion: EmotionSound = { ...newEmotion, id };
+    
+    setEmotionSounds(prev => [...prev, emotion]);
+    
+    // Test the new emotion immediately to ensure it works
+    if (emotion.type === 'tts') {
+      await handleSpeak(emotion.content);
+    }
+  };
+
   const handleToggleListening = async () => {
     try {
       if (isListening) {
@@ -165,7 +187,7 @@ const VoiceConsole = () => {
     <div className="min-h-screen bg-gray-900 text-white p-6 relative">
       <LatencyIndicator currentLatency={currentLatency} />
       
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Exposure Voice Console</h1>
@@ -176,17 +198,15 @@ const VoiceConsole = () => {
         <ModeSelector currentMode={currentMode} onModeChange={setCurrentMode} />
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Primary Controls */}
           <div className="space-y-6">
-            {/* Always show emotion profile selector */}
             <EmotionProfileSelector
               profiles={emotionProfiles}
               selectedProfile={selectedProfile}
               onProfileChange={setSelectedProfile}
             />
 
-            {/* Conditional components based on mode */}
             {(currentMode === 'text' || currentMode === 'stt') && (
               <TextToSpeak
                 onSpeak={handleSpeak}
@@ -206,11 +226,25 @@ const VoiceConsole = () => {
             <SessionStatus status={sessionStatus} />
           </div>
 
-          {/* Right Column */}
+          {/* Middle Column - Emotion Controls */}
           <div className="space-y-6">
             <EmotionBoard
               emotions={emotionSounds}
               onEmotionTrigger={handleEmotionTrigger}
+              disabled={isProcessing}
+            />
+
+            <CustomEmotionCreator
+              onCreateEmotion={handleCreateCustomEmotion}
+              disabled={isProcessing}
+            />
+          </div>
+
+          {/* Right Column - Advanced Features */}
+          <div className="space-y-6">
+            <StreamDeckIntegration
+              emotions={emotionSounds}
+              onTriggerEmotion={handleEmotionTrigger}
               disabled={isProcessing}
             />
           </div>

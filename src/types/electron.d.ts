@@ -12,6 +12,12 @@ export interface ElectronAPI {
   // Emotion sounds
   playEmotionSound: (soundId: string) => Promise<void>;
   
+  // Stream Deck integration
+  connectStreamDeck: () => Promise<void>;
+  disconnectStreamDeck: () => Promise<void>;
+  mapStreamDeckButton: (params: { buttonId: number; emotionId: string; label: string }) => Promise<void>;
+  reloadStreamDeckMappings: () => Promise<void>;
+  
   // Performance monitoring
   getLatencyStats: () => Promise<{ avgLatency: number }>;
 }
