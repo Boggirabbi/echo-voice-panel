@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { EmotionProfile, SessionLogEntry, EmotionSound } from "@/types/electron";
+import { SessionLogEntry, EmotionSound } from "@/types/electron";
 import ModeSelector from "./ModeSelector";
 import TextToSpeak from "./TextToSpeak";
 import EmotionBoard from "./EmotionBoard";
-import EmotionProfileSelector from "./EmotionProfile";
+import VoiceSelector from "./VoiceSelector";
 import SpeechToSpeechToggle from "./SpeechToSpeechToggle";
 import SessionStatus from "./SessionStatus";
 import SessionLog from "./SessionLog";
@@ -22,15 +22,8 @@ const VoiceConsole = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentLatency, setCurrentLatency] = useState<number>(0);
 
-  // Voice and emotion profiles
-  const [emotionProfiles] = useState<EmotionProfile[]>([
-    { id: 'calm', name: 'Calm Therapist', voiceName: 'en-US-Standard-A', speed: 0.9, pitch: -2, style: 'calm' },
-    { id: 'tease', name: 'Teasing Girl', voiceName: 'en-US-Standard-C', speed: 1.1, pitch: 3, style: 'playful' },
-    { id: 'coach', name: 'Encouraging Coach', voiceName: 'en-US-Standard-D', speed: 1.0, pitch: 1, style: 'motivational' },
-    { id: 'sultry', name: 'Sultry Seductress', voiceName: 'en-US-Standard-E', speed: 0.8, pitch: 2, style: 'seductive' },
-    { id: 'dominant', name: 'Dominant Mistress', voiceName: 'en-US-Standard-F', speed: 1.0, pitch: -1, style: 'commanding' }
-  ]);
-  const [selectedProfile, setSelectedProfile] = useState('calm');
+  // Voice selection - now uses Google Cloud voices
+  const [selectedVoice, setSelectedVoice] = useState<string>("en-US-Wavenet-C");
 
   // Emotion sounds - expanded with adult content
   const [emotionSounds, setEmotionSounds] = useState<EmotionSound[]>([
@@ -63,7 +56,7 @@ const VoiceConsole = () => {
     setSessionLog(prev => [entry, ...prev]);
   };
 
-  const handleSpeak = async (text: string, command?: string) => {
+  const handleSpeak = async (text: string, voiceOverride?: string) => {
     if (!text.trim()) return;
     
     const startTime = Date.now();
@@ -71,33 +64,24 @@ const VoiceConsole = () => {
     setSessionStatus("processing");
 
     try {
-      const profile = emotionProfiles.find(p => p.id === selectedProfile) || emotionProfiles[0];
-      
-      // Apply command-based emotion overrides
-      let activeProfile = profile;
-      if (command) {
-        const commandProfile = emotionProfiles.find(p => p.id === command);
-        if (commandProfile) {
-          activeProfile = commandProfile;
-        }
-      }
+      const voiceToUse = voiceOverride || selectedVoice;
 
       if (window.electronAPI?.synthesize) {
         await window.electronAPI.synthesize({
           text,
-          voiceName: activeProfile.voiceName,
-          speed: activeProfile.speed,
-          pitch: activeProfile.pitch
+          voiceName: voiceToUse,
+          speed: 1.0,
+          pitch: 0
         });
       } else {
         // Demo mode
-        console.log(`[DEMO] Speaking: "${text}" with profile: ${activeProfile.name}`);
+        console.log(`[DEMO] Speaking: "${text}" with voice: ${voiceToUse}`);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       const latency = Date.now() - startTime;
       setCurrentLatency(latency);
-      addLogEntry('tts', text, activeProfile.name, latency);
+      addLogEntry('tts', text, voiceToUse, latency);
     } catch (error) {
       console.error("Failed to synthesize text:", error);
     } finally {
@@ -153,9 +137,8 @@ const VoiceConsole = () => {
         setIsListening(false);
         setSessionStatus("idle");
       } else {
-        const profile = emotionProfiles.find(p => p.id === selectedProfile) || emotionProfiles[0];
         if (window.electronAPI?.startStreaming) {
-          await window.electronAPI.startStreaming({ voiceName: profile.voiceName });
+          await window.electronAPI.startStreaming({ voiceName: selectedVoice });
         }
         setIsListening(true);
         setSessionStatus("listening");
@@ -201,10 +184,10 @@ const VoiceConsole = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Primary Controls */}
           <div className="space-y-6">
-            <EmotionProfileSelector
-              profiles={emotionProfiles}
-              selectedProfile={selectedProfile}
-              onProfileChange={setSelectedProfile}
+            <VoiceSelector
+              selectedVoice={selectedVoice}
+              onVoiceChange={setSelectedVoice}
+              disabled={isProcessing}
             />
 
             {(currentMode === 'text' || currentMode === 'stt') && (
