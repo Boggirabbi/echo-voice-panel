@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
@@ -30,10 +30,10 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
       setRecentPhrases(prev => [cleanText, ...prev.slice(0, 2)]);
       setText("");
       
-      // Maintain focus on input after submission
+      // Only refocus after speaking ends, not immediately
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 0);
+      }, 100);
     } catch (error) {
       console.error("Failed to speak:", error);
     }
@@ -45,22 +45,6 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
       handleSubmit(e);
     }
   };
-
-  // Auto-focus input on mount and maintain focus
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  // Ensure focus persists even during speech playback
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.activeElement !== inputRef.current) {
-        inputRef.current?.focus();
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="space-y-4">
@@ -75,10 +59,11 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type message or use slash commands (/tease, /calm, /whisper)..."
-            className="flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+            placeholder="Type /tease Hello there... and press Enter"
+            className={`flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+              isSpeaking ? 'ring-2 ring-blue-400 animate-pulse' : ''
+            }`}
             disabled={disabled}
-            autoFocus
           />
           <Button
             type="submit"

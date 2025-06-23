@@ -9,6 +9,15 @@ interface EmotionBoardProps {
 }
 
 const EmotionBoard = ({ emotions, onEmotionTrigger, disabled }: EmotionBoardProps) => {
+  const getEmotionColor = (emotionId: string) => {
+    if (emotionId.includes('tease') || emotionId.includes('encourage')) return 'bg-pink-700 hover:bg-pink-600';
+    if (emotionId.includes('moan') || emotionId.includes('whisper') || emotionId.includes('affirmation')) return 'bg-purple-700 hover:bg-purple-600';
+    if (emotionId.includes('sigh') || emotionId.includes('calm')) return 'bg-blue-700 hover:bg-blue-600';
+    if (emotionId.includes('humiliation') || emotionId.includes('mock')) return 'bg-yellow-700 hover:bg-yellow-600';
+    if (emotionId.includes('laugh') || emotionId.includes('gasp')) return 'bg-green-700 hover:bg-green-600';
+    return 'bg-gray-700 hover:bg-gray-600'; // default
+  };
+
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-300">
@@ -20,10 +29,10 @@ const EmotionBoard = ({ emotions, onEmotionTrigger, disabled }: EmotionBoardProp
             key={emotion.id}
             onClick={() => onEmotionTrigger(emotion.id)}
             disabled={disabled}
-            className="h-16 flex flex-col items-center justify-center space-y-1 bg-gray-700 hover:bg-gray-600 focus:ring-2 focus:ring-purple-500 transition-all duration-150"
+            className={`h-16 flex flex-col items-center justify-center space-y-1 ${getEmotionColor(emotion.id)} focus:ring-2 focus:ring-purple-500 transition-all duration-150`}
           >
-            <div className="font-semibold text-sm">{emotion.name}</div>
-            <div className="text-xs text-gray-400 font-mono">
+            <div className="font-semibold text-sm text-white">{emotion.name}</div>
+            <div className="text-xs text-gray-300 font-mono">
               {emotion.hotkey}
             </div>
           </Button>

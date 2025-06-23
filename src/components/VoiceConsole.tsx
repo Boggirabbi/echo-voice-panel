@@ -208,26 +208,45 @@ const VoiceConsole = () => {
     <div className="min-h-screen bg-gray-900 text-white p-6 relative">
       <LatencyIndicator currentLatency={currentLatency} />
       
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Exposure Voice Console</h1>
-          <p className="text-gray-400">Real-Time Desktop Companion for AI Voice Sessions</p>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header with Logo and Active Status */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">EVC</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Exposure Voice Console</h1>
+              <p className="text-sm text-gray-400">Voice: {selectedVoice} • Mode: {currentMode.toUpperCase()}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-500">Real-Time Desktop Companion</p>
+            <SessionStatus status={sessionStatus} />
+          </div>
         </div>
 
-        {/* Mode Selector */}
+        {/* Mode Selector - Full Width */}
         <ModeSelector currentMode={currentMode} onModeChange={setCurrentMode} />
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Primary Controls */}
-          <div className="space-y-6">
-            <VoiceSelector
-              selectedVoice={selectedVoice}
-              onVoiceChange={setSelectedVoice}
+        {/* Main 3-Panel Layout */}
+        <div className="grid grid-cols-12 gap-6 min-h-[600px]">
+          {/* Left Panel - Emotion Board */}
+          <div className="col-span-4 space-y-6">
+            <EmotionBoard
+              emotions={emotionSounds}
+              onEmotionTrigger={handleEmotionTrigger}
               disabled={isProcessing}
             />
+            
+            <CustomEmotionCreator
+              onCreateEmotion={handleCreateCustomEmotion}
+              disabled={isProcessing}
+            />
+          </div>
 
+          {/* Center Panel - Text Input and Session Log */}
+          <div className="col-span-4 space-y-6">
             {(currentMode === 'text' || currentMode === 'stt') && (
               <TextToSpeak
                 onSpeak={handleSpeak}
@@ -244,25 +263,17 @@ const VoiceConsole = () => {
               />
             )}
 
-            <SessionStatus status={sessionStatus} />
+            <SessionLog entries={sessionLog} />
           </div>
 
-          {/* Middle Column - Emotion Controls */}
-          <div className="space-y-6">
-            <EmotionBoard
-              emotions={emotionSounds}
-              onEmotionTrigger={handleEmotionTrigger}
+          {/* Right Panel - Voice Selector and Advanced Features */}
+          <div className="col-span-4 space-y-6">
+            <VoiceSelector
+              selectedVoice={selectedVoice}
+              onVoiceChange={setSelectedVoice}
               disabled={isProcessing}
             />
 
-            <CustomEmotionCreator
-              onCreateEmotion={handleCreateCustomEmotion}
-              disabled={isProcessing}
-            />
-          </div>
-
-          {/* Right Column - Advanced Features */}
-          <div className="space-y-6">
             <StreamDeckIntegration
               emotions={emotionSounds}
               onTriggerEmotion={handleEmotionTrigger}
@@ -270,9 +281,6 @@ const VoiceConsole = () => {
             />
           </div>
         </div>
-
-        {/* Session Log - Full Width */}
-        <SessionLog entries={sessionLog} />
       </div>
     </div>
   );
