@@ -1,63 +1,36 @@
-
 export interface SSMLConfig {
   rate?: 'x-slow' | 'slow' | 'medium' | 'fast' | 'x-fast';
-  pitch?: 'x-low' | 'low' | 'medium' | 'high' | 'x-high';
+  pitch?: 'x-low' | 'low' | 'medium' | 'high' | 'x-high' | string;
   volume?: 'silent' | 'x-soft' | 'soft' | 'medium' | 'loud' | 'x-loud';
   emphasis?: 'strong' | 'moderate' | 'reduced';
 }
 
-const emotionPresets: Record<string, SSMLConfig> = {
-  tease: { rate: 'slow', pitch: 'high', emphasis: 'moderate' },
-  calm: { rate: 'slow', pitch: 'low', volume: 'soft' },
-  encourage: { rate: 'medium', pitch: 'medium', emphasis: 'strong' },
-  whisper: { rate: 'slow', pitch: 'low', volume: 'x-soft' },
-  moan: { rate: 'x-slow', pitch: 'low', volume: 'soft' },
-  laugh: { rate: 'fast', pitch: 'high', emphasis: 'strong' },
-  gasp: { rate: 'fast', pitch: 'x-high', emphasis: 'strong' },
-  humiliate: { rate: 'medium', pitch: 'high', emphasis: 'moderate' },
-  affirmation: { rate: 'slow', pitch: 'medium', volume: 'soft' },
-  command: { rate: 'medium', pitch: 'medium', emphasis: 'strong' }
+// Updated SSML mapping presets as specified
+const ssmlTemplates: Record<string, string> = {
+  "tease": "<speak><prosody rate='medium' pitch='high'>{{TEXT}}</prosody></speak>",
+  "moan": "<speak><prosody rate='slow' pitch='+4st'>{{TEXT}}</prosody></speak>",
+  "soothe": "<speak><prosody rate='slow' pitch='low'>{{TEXT}}</prosody></speak>",
+  "mock": "<speak><prosody rate='fast' pitch='high'>{{TEXT}}</prosody></speak>",
+  "praise": "<speak><prosody rate='medium' pitch='+2st'>{{TEXT}}</prosody></speak>",
+  "whisper": "<speak><prosody volume='x-soft' rate='slow'>{{TEXT}}</prosody></speak>",
+  // Keep existing emotion presets for backward compatibility
+  "calm": "<speak><prosody rate='slow' pitch='low' volume='soft'>{{TEXT}}</prosody></speak>",
+  "encourage": "<speak><prosody rate='medium' pitch='medium'><emphasis level='strong'>{{TEXT}}</emphasis></prosody></speak>",
+  "laugh": "<speak><prosody rate='fast' pitch='high'><emphasis level='strong'>{{TEXT}}</emphasis></prosody></speak>",
+  "gasp": "<speak><prosody rate='fast' pitch='x-high'><emphasis level='strong'>{{TEXT}}</emphasis></prosody></speak>",
+  "humiliate": "<speak><prosody rate='medium' pitch='high'>{{TEXT}}</prosody></speak>",
+  "affirmation": "<speak><prosody rate='slow' pitch='medium' volume='soft'>{{TEXT}}</prosody></speak>",
+  "command": "<speak><prosody rate='medium' pitch='medium'><emphasis level='strong'>{{TEXT}}</emphasis></prosody></speak>"
 };
 
 export const generateSSML = (text: string, emotion?: string): string => {
-  const config = emotion ? emotionPresets[emotion] : undefined;
-  
-  if (!config) {
-    return text; // Return plain text if no emotion mapping
+  if (!emotion || !ssmlTemplates[emotion]) {
+    // Default wrapping for text without slash command
+    return `<speak>${text}</speak>`;
   }
 
-  let ssml = '<speak>';
-  
-  // Add prosody tags based on config
-  const prosodyAttributes: string[] = [];
-  if (config.rate) prosodyAttributes.push(`rate="${config.rate}"`);
-  if (config.pitch) prosodyAttributes.push(`pitch="${config.pitch}"`);
-  if (config.volume) prosodyAttributes.push(`volume="${config.volume}"`);
-  
-  if (prosodyAttributes.length > 0) {
-    ssml += `<prosody ${prosodyAttributes.join(' ')}>`;
-  }
-  
-  // Add emphasis if specified
-  if (config.emphasis) {
-    ssml += `<emphasis level="${config.emphasis}">`;
-  }
-  
-  // Add the text content
-  ssml += text;
-  
-  // Close tags in reverse order
-  if (config.emphasis) {
-    ssml += '</emphasis>';
-  }
-  
-  if (prosodyAttributes.length > 0) {
-    ssml += '</prosody>';
-  }
-  
-  ssml += '</speak>';
-  
-  return ssml;
+  // Use the template and replace {{TEXT}} with actual text
+  return ssmlTemplates[emotion].replace('{{TEXT}}', text);
 };
 
 export const parseSlashCommand = (input: string): { command?: string; text: string; ssml?: string } => {
@@ -68,5 +41,6 @@ export const parseSlashCommand = (input: string): { command?: string; text: stri
     const ssml = generateSSML(text, command);
     return { command, text, ssml };
   }
-  return { text: input };
+  // Return with default SSML wrapping for non-slash commands
+  return { text: input, ssml: generateSSML(input) };
 };
