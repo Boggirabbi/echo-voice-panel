@@ -21,6 +21,7 @@ const VoiceConsole = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentLatency, setCurrentLatency] = useState<number>(0);
+  const [shouldRestartListening, setShouldRestartListening] = useState(false);
 
   // Voice selection - Google Cloud voices
   const [selectedVoice, setSelectedVoice] = useState<string>("en-US-Wavenet-C");
@@ -63,6 +64,11 @@ const VoiceConsole = () => {
     setIsSpeaking(true);
     setSessionStatus("processing");
 
+    // Store whether we should restart listening after speaking
+    if (currentMode === 'stt' && isListening) {
+      setShouldRestartListening(true);
+    }
+
     try {
       const voiceToUse = voiceOverride || selectedVoice;
       const textToSpeak = ssml || text; // Use SSML if provided
@@ -90,6 +96,32 @@ const VoiceConsole = () => {
       setSessionStatus("idle");
     }
   };
+
+  // Auto-restart listening after speaking completes
+  useEffect(() => {
+    const restartListening = async () => {
+      if (shouldRestartListening && !isSpeaking && currentMode === 'stt') {
+        setShouldRestartListening(false);
+        try {
+          if (window.electronAPI?.startStreaming) {
+            await window.electronAPI.startStreaming({ voiceName: selectedVoice });
+          }
+          setIsListening(true);
+          setSessionStatus("listening");
+        } catch (error) {
+          console.error("Failed to restart listening:", error);
+          setIsListening(false);
+          setSessionStatus("idle");
+        }
+      }
+    };
+
+    if (!isSpeaking && shouldRestartListening) {
+      // Small delay to ensure speech completion
+      const timer = setTimeout(restartListening, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isSpeaking, shouldRestartListening, currentMode, selectedVoice]);
 
   const handleEmotionTrigger = async (emotionId: string) => {
     const emotion = emotionSounds.find(e => e.id === emotionId);
@@ -140,6 +172,7 @@ const VoiceConsole = () => {
         }
         setIsListening(false);
         setSessionStatus("idle");
+        setShouldRestartListening(false); // Clear restart flag when manually stopped
       } else {
         if (window.electronAPI?.startStreaming) {
           await window.electronAPI.startStreaming({ voiceName: selectedVoice });
@@ -151,6 +184,7 @@ const VoiceConsole = () => {
       console.error("Failed to toggle listening:", error);
       setIsListening(false);
       setSessionStatus("idle");
+      setShouldRestartListening(false);
     }
   };
 
