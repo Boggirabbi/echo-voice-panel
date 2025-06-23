@@ -29,7 +29,11 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
       // Add to recent phrases
       setRecentPhrases(prev => [cleanText, ...prev.slice(0, 2)]);
       setText("");
-      inputRef.current?.focus();
+      
+      // Maintain focus on input after submission
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     } catch (error) {
       console.error("Failed to speak:", error);
     }
@@ -42,9 +46,20 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
     }
   };
 
-  // Auto-focus input on mount
+  // Auto-focus input on mount and maintain focus
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Ensure focus persists even during speech playback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.activeElement !== inputRef.current) {
+        inputRef.current?.focus();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -62,7 +77,8 @@ const TextToSpeak = ({ onSpeak, disabled, isSpeaking }: TextToSpeakProps) => {
             onKeyPress={handleKeyPress}
             placeholder="Type message or use slash commands (/tease, /calm, /whisper)..."
             className="flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
-            disabled={disabled || isSpeaking}
+            disabled={disabled}
+            autoFocus
           />
           <Button
             type="submit"
