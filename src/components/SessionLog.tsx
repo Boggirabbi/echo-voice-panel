@@ -18,6 +18,8 @@ const SessionLog = ({ entries, maxEntries = 10 }: SessionLogProps) => {
       case 'tts': return '🗣️';
       case 'stt': return '🎤';
       case 'emotion': return '😊';
+      case 'error': return '❌';
+      case 'replay': return '🔄';
       default: return '📝';
     }
   };
@@ -27,6 +29,8 @@ const SessionLog = ({ entries, maxEntries = 10 }: SessionLogProps) => {
       case 'tts': return 'text-blue-400';
       case 'stt': return 'text-green-400';
       case 'emotion': return 'text-purple-400';
+      case 'error': return 'text-red-400';
+      case 'replay': return 'text-yellow-400';
       default: return 'text-gray-400';
     }
   };

@@ -39,7 +39,7 @@ export interface EmotionProfile {
 export interface SessionLogEntry {
   id: string;
   timestamp: Date;
-  type: 'tts' | 'stt' | 'emotion';
+  type: 'stt' | 'emotion' | 'tts' | 'error' | 'replay';
   content: string;
   emotion?: string;
   latency?: number;
