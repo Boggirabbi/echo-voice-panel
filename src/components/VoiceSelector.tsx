@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Voice } from "@/types/electron";
+import { GoogleVoice, GoogleTTSService } from "@/services/googleTTS";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 interface VoiceSelectorProps {
   selectedVoice: string;
@@ -10,28 +11,36 @@ interface VoiceSelectorProps {
 }
 
 const VoiceSelector = ({ selectedVoice, onVoiceChange, disabled }: VoiceSelectorProps) => {
-  const [voices, setVoices] = useState<Voice[]>([]);
+  const [voices, setVoices] = useState<GoogleVoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { accessToken } = useGoogleAuth();
 
   useEffect(() => {
     const fetchVoices = async () => {
+      if (!accessToken) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        if (window.electronAPI?.getVoices) {
-          const availableVoices = await window.electronAPI.getVoices();
-          setVoices(availableVoices);
-        } else {
-          // Demo mode - mock Google Cloud voices
-          const mockVoices: Voice[] = [
-            { name: "en-US-Wavenet-A", languageCode: "en-US", gender: "Female" },
-            { name: "en-US-Wavenet-B", languageCode: "en-US", gender: "Male" },
-            { name: "en-US-Wavenet-C", languageCode: "en-US", gender: "Female" },
-            { name: "en-US-Wavenet-D", languageCode: "en-US", gender: "Male" },
-            { name: "en-US-Studio-O", languageCode: "en-US", gender: "Female" },
-            { name: "en-US-Studio-Q", languageCode: "en-US", gender: "Male" },
-            { name: "en-GB-Wavenet-A", languageCode: "en-GB", gender: "Female" },
-            { name: "en-GB-Wavenet-B", languageCode: "en-GB", gender: "Male" },
-          ];
-          setVoices(mockVoices);
+        const ttsService = new GoogleTTSService(accessToken);
+        const availableVoices = await ttsService.getVoices();
+        
+        // Filter for English voices and sort by quality
+        const englishVoices = availableVoices
+          .filter(voice => voice.languageCodes.some(code => code.startsWith('en-')))
+          .sort((a, b) => {
+            // Prioritize Studio > Wavenet > Standard
+            const aScore = a.name.includes('Studio') ? 3 : a.name.includes('Wavenet') ? 2 : 1;
+            const bScore = b.name.includes('Studio') ? 3 : b.name.includes('Wavenet') ? 2 : 1;
+            return bScore - aScore;
+          });
+        
+        setVoices(englishVoices);
+        
+        // Auto-select first voice if none selected
+        if (!selectedVoice && englishVoices.length > 0) {
+          onVoiceChange(englishVoices[0].name);
         }
       } catch (error) {
         console.error("Failed to fetch voices:", error);
@@ -41,27 +50,38 @@ const VoiceSelector = ({ selectedVoice, onVoiceChange, disabled }: VoiceSelector
     };
 
     fetchVoices();
-  }, []);
+  }, [accessToken, selectedVoice, onVoiceChange]);
 
-  const formatVoiceName = (voice: Voice) => {
+  const formatVoiceName = (voice: GoogleVoice) => {
     const parts = voice.name.split("-");
     const language = parts[0] || "en";
     const region = parts[1] || "US";
     const type = parts[2] || "Standard";
     const variant = parts[3] || "A";
     
-    return `${language.toUpperCase()}-${region} ${type} ${variant} (${voice.gender})`;
+    return `${language.toUpperCase()}-${region} ${type} ${variant} (${voice.ssmlGender})`;
   };
 
   const categorizeVoices = () => {
-    const wavenet = voices.filter(v => v.name.includes("Wavenet"));
     const studio = voices.filter(v => v.name.includes("Studio"));
+    const wavenet = voices.filter(v => v.name.includes("Wavenet"));
     const standard = voices.filter(v => !v.name.includes("Wavenet") && !v.name.includes("Studio"));
     
-    return { wavenet, studio, standard };
+    return { studio, wavenet, standard };
   };
 
-  const { wavenet, studio, standard } = categorizeVoices();
+  if (!accessToken) {
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300">
+          Voice Selection
+        </label>
+        <div className="w-full h-10 bg-gray-800 border border-gray-700 rounded-md flex items-center justify-center">
+          <span className="text-gray-400 text-sm">Login required</span>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -73,6 +93,8 @@ const VoiceSelector = ({ selectedVoice, onVoiceChange, disabled }: VoiceSelector
       </div>
     );
   }
+
+  const { studio, wavenet, standard } = categorizeVoices();
 
   return (
     <div className="space-y-2">
