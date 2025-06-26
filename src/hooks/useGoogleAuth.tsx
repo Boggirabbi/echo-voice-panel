@@ -53,6 +53,8 @@ export const useGoogleAuth = () => {
       const code = urlParams.get('code');
       const error = urlParams.get('error');
       
+      console.log('OAuth callback - Code:', code ? 'present' : 'none', 'Error:', error);
+      
       if (error) {
         console.error('OAuth error:', error);
         setAuthState(prev => ({ ...prev, error: `OAuth error: ${error}`, isLoading: false }));
@@ -80,12 +82,15 @@ export const useGoogleAuth = () => {
       console.log('Fetching Google Client ID...');
       const { data, error } = await supabase.functions.invoke('get-google-client-id');
       
+      console.log('Client ID response:', { data, error });
+      
       if (error) {
         console.error('Error fetching client ID:', error);
-        throw new Error('Failed to get Google Client ID');
+        throw new Error(`Failed to get Google Client ID: ${error.message}`);
       }
       
       if (!data?.clientId) {
+        console.error('No client ID in response:', data);
         throw new Error('No client ID returned from server');
       }
       
@@ -113,6 +118,8 @@ export const useGoogleAuth = () => {
         `access_type=offline&` +
         `prompt=consent`;
 
+      console.log('Auth URL:', authUrl);
+      console.log('Redirect URI:', redirectUri);
       console.log('Redirecting to Google OAuth...');
       window.location.href = authUrl;
     } catch (error) {
@@ -151,6 +158,7 @@ export const useGoogleAuth = () => {
       const { access_token, user_info } = response.data;
       
       if (!access_token || !user_info) {
+        console.error('Invalid OAuth response:', response.data);
         throw new Error('Invalid response from OAuth exchange');
       }
       
