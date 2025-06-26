@@ -12,12 +12,15 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Fetching Google OAuth Client ID...')
     const clientId = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID')
     
     if (!clientId) {
+      console.error('GOOGLE_OAUTH_CLIENT_ID environment variable not set')
       throw new Error('Google OAuth Client ID not configured')
     }
 
+    console.log('Client ID retrieved successfully')
     return new Response(
       JSON.stringify({ clientId }),
       {
@@ -25,10 +28,11 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in get-google-client-id:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
