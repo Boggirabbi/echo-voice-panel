@@ -50,7 +50,7 @@ export const useGoogleAuth = () => {
     // Handle OAuth redirect
     const handleOAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.Get('code');
+      const code = urlParams.get('code');
       const error = urlParams.get('error');
       
       if (error) {
