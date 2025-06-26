@@ -54,6 +54,8 @@ export class GoogleOAuthService {
 
       console.log('Generated Auth URL:', authUrl);
       console.log('Encoded Redirect URI in URL:', encodeURIComponent(redirectUri));
+      console.log('Raw Redirect URI:', redirectUri);
+      console.log('Expected current domain:', window.location.origin);
       console.log('Redirecting to Google OAuth...');
       
       // Clear any cached data before redirect
