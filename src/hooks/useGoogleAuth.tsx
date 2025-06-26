@@ -54,6 +54,8 @@ export const useGoogleAuth = () => {
       const error = urlParams.get('error');
       
       console.log('OAuth callback - Code:', code ? 'present' : 'none', 'Error:', error);
+      console.log('Current URL:', window.location.href);
+      console.log('Current origin:', window.location.origin);
       
       if (error) {
         console.error('OAuth error:', error);
@@ -110,6 +112,12 @@ export const useGoogleAuth = () => {
       const redirectUri = window.location.origin;
       const scope = 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
       
+      console.log('=== OAuth Login Debug Info ===');
+      console.log('Client ID:', clientId);
+      console.log('Redirect URI:', redirectUri);
+      console.log('Current URL:', window.location.href);
+      console.log('Window origin:', window.location.origin);
+      
       const authUrl = `https://accounts.google.com/oauth2/authorize?` +
         `client_id=${encodeURIComponent(clientId)}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
@@ -118,8 +126,7 @@ export const useGoogleAuth = () => {
         `access_type=offline&` +
         `prompt=consent`;
 
-      console.log('Auth URL:', authUrl);
-      console.log('Redirect URI:', redirectUri);
+      console.log('Generated Auth URL:', authUrl);
       console.log('Redirecting to Google OAuth...');
       window.location.href = authUrl;
     } catch (error) {
@@ -135,6 +142,7 @@ export const useGoogleAuth = () => {
   const exchangeCodeForToken = async (code: string) => {
     try {
       console.log('Exchanging code for token...');
+      console.log('Using redirect URI:', window.location.origin);
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
       const response = await supabase.functions.invoke('google-oauth-exchange', {
