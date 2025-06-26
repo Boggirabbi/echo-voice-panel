@@ -117,6 +117,9 @@ export const useGoogleAuth = () => {
       console.log('Redirect URI:', redirectUri);
       console.log('Current URL:', window.location.href);
       console.log('Window origin:', window.location.origin);
+      console.log('Location hostname:', window.location.hostname);
+      console.log('Location protocol:', window.location.protocol);
+      console.log('Location port:', window.location.port);
       
       const authUrl = `https://accounts.google.com/oauth2/authorize?` +
         `client_id=${encodeURIComponent(clientId)}&` +
@@ -127,7 +130,13 @@ export const useGoogleAuth = () => {
         `prompt=consent`;
 
       console.log('Generated Auth URL:', authUrl);
+      console.log('Encoded Redirect URI in URL:', encodeURIComponent(redirectUri));
       console.log('Redirecting to Google OAuth...');
+      
+      // Clear any cached data before redirect
+      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('google_user');
+      
       window.location.href = authUrl;
     } catch (error) {
       console.error('Login error:', error);
